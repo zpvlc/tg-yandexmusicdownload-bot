@@ -4,6 +4,9 @@ import glob
 import logging
 import traceback
 import io
+import speedtest
+import asyncio
+
 from collections import defaultdict
 from urllib.parse import urlparse
 
@@ -82,7 +85,7 @@ def quality_keyboard():
 def main_keyboard():
     return ReplyKeyboardMarkup([
         [KeyboardButton("🗣 Качество звучания"), KeyboardButton("🔍 Поиск")],
-        [KeyboardButton("🖼 Скачать обложку")]
+        [KeyboardButton("🖼 Скачать обложку"), KeyboardButton("🧪 Тест соединения")], 
     ], resize_keyboard=True)
 
 def search_inline_keyboard():
@@ -261,8 +264,56 @@ async def handle_quality_choice(client, callback_query):
 @app.on_message(filters.private & filters.text & ~filters.command("start"))
 async def handle_message(client, message):
     user_id = message.from_user.id
-    user = user_data[user_id]
+    user = user_data.setdefault(user_id, {"messages_to_delete": []})
     text = message.text.strip()
+
+    if text == "🧪 Тест соединения":
+        try:
+            await message.delete()
+        except Exception as e:
+            logger.warning(f"Не удалось удалить сообщение: {e}")
+
+        try:
+            status_msg = await message.reply("⏳ <b>Запускаю тест скорости соединения...</b>", parse_mode=ParseMode.HTML)
+            user["messages_to_delete"].append(status_msg.id)
+
+            import speedtest
+            st = speedtest.Speedtest()
+
+            await status_msg.edit_text("🌐 <b>Ищу лучший сервер...</b>", parse_mode=ParseMode.HTML)
+            server = st.get_best_server()
+            ping = server["latency"]
+
+            await status_msg.edit_text("⬇️ <b>Проверка загрузки...</b>", parse_mode=ParseMode.HTML)
+            download_speed = st.download() / 1_000_000
+
+            await status_msg.edit_text("⬆️ <b>Проверка отдачи...</b>", parse_mode=ParseMode.HTML)
+            upload_speed = st.upload() / 1_000_000
+
+            await status_msg.delete()
+            user["messages_to_delete"].remove(status_msg.id)
+
+            result = (
+                "📶 <b>Результаты теста скорости</b>\n\n"
+                f"• <b>Пинг:</b> {ping:.2f} мс\n"
+                f"• <b>Скорость загрузки:</b> {download_speed:.2f} Мбит/с\n"
+                f"• <b>Скорость отдачи:</b> {upload_speed:.2f} Мбит/с\n\n"
+                "<i>Тест завершен успешно ✅</i>"
+            )
+
+            msg = await message.reply(result, reply_markup=main_keyboard(), parse_mode=ParseMode.HTML)
+            user["messages_to_delete"].append(msg.id)
+
+        except Exception as e:
+            logger.error(f"Ошибка при тесте скорости: {e}")
+            error_msg = await message.reply(
+                "⚠️ <b>Ошибка при тестировании соединения</b>\n\n"
+                f"<code>{e}</code>",
+                reply_markup=main_keyboard(),
+                parse_mode=ParseMode.HTML
+            )
+            user["messages_to_delete"].append(error_msg.id)
+        return
 
     if text in ["🗣 Качество звучания", "🔍 Поиск", "🖼 Скачать обложку"]:
         return
@@ -279,7 +330,6 @@ async def handle_message(client, message):
             return
 
         await message.delete()
-
         status_msg = await message.reply("⏳ Скачиваю обложку...", reply_markup=main_keyboard())
         user["messages_to_delete"].append(status_msg.id)
 
@@ -292,7 +342,7 @@ async def handle_message(client, message):
         result = subprocess.run([
             "yandex-music-downloader",
             "--token", YANDEX_TOKEN,
-            "--quality", "0",  # минимальное
+            "--quality", "0",
             "--embed-cover",
             "--cover-resolution", COVER_RESOLUTION,
             "--url", text,
@@ -328,7 +378,9 @@ async def handle_message(client, message):
             )
         else:
             await message.reply("❌ Обложка не найдена.", reply_markup=main_keyboard())
+
         await cleanup_user_messages(client, user_id)
+
         try:
             os.remove(audio_path)
         except Exception as e:
@@ -338,15 +390,17 @@ async def handle_message(client, message):
     if user.get("quality") is None:
         warning = await message.reply(
             "⚠️ *Выберите качество звучания!*\nПерейдите в меню «🗣 Качество звучания» и задайте желаемый уровень, иначе бот не знает, что отдавать.",
-            reply_markup=main_keyboard()
+            reply_markup=main_keyboard(),
+            parse_mode=ParseMode.MARKDOWN
         )
         user["messages_to_delete"].append(warning.id)
         return
 
     if not is_valid_yandex_music_url(text):
         fallback = await message.reply(
-            "❌ <b>Неверная ссылка.</b>\nПожалуйста, пришлите корректный URL на трек Яндекс Музыки.",
-            reply_markup=main_keyboard()
+            "❌ <b>Неверная ссылка.</b>\nПожалуйста, пришлите корректный URL на трек Яндекс Музыки.",
+            reply_markup=main_keyboard(),
+            parse_mode=ParseMode.HTML
         )
         user["messages_to_delete"].append(fallback.id)
         return
@@ -358,8 +412,9 @@ async def handle_message(client, message):
 
     try:
         status_msg = await message.reply(
-            "⏳ <b>Скачиваю трек...</b><br>Пожалуйста, подождите. Это может занять несколько минут.",
-            reply_markup=main_keyboard()
+            "⏳ <b>Скачиваю трек...</b>\nПожалуйста, подождите. Это может занять несколько минут.",
+            reply_markup=main_keyboard(),
+            parse_mode=ParseMode.HTML
         )
         user["messages_to_delete"].append(status_msg.id)
 
@@ -427,6 +482,7 @@ async def handle_message(client, message):
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=main_keyboard()
         )
+
 
 @app.on_inline_query()
 async def inline_search_handler(client, inline_query):
