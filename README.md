@@ -1,4 +1,4 @@
-# 🎵 Yandex Music Bot 
+# 🎵 Яндекс.Музыка  
 
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
 ![Aiogram](https://img.shields.io/badge/Aiogram-3.x-blue?logo=telegram)
