@@ -1,0 +1,15 @@
+# --- Основа бота ---
+aiogram~=3.8
+python-dotenv~=1.0
+pydantic-settings~=2.3
+
+# --- База данных ---
+aiosqlite~=0.19
+
+# --- Работа с API и файлами ---
+yandex-music~=2.2
+mutagen~=1.47
+Pillow~=10.3
+
+# --- Загрузчик ---
+yandex-music-downloader @ https://github.com/llistochek/yandex-music-downloader/archive/main.zip
