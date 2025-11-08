@@ -63,3 +63,30 @@ YANDEX_TOKEN="яндекс токен, посмотрете гитхаб Marshal
 ```
 python run.py
 ```
+## Кстати, вы можете ознакомиться c ботом уже сейчас @yndxddbot
+### Бот не отличается от того что предоставлен в этом репозитории, вот демонстрация работы бота:
+
+<img width="600" height="498" alt="изображение" src="https://github.com/user-attachments/assets/9061a567-b51d-4201-8d67-0b88078d7d26" />
+<img width="600" height="1563" alt="изображение" src="https://github.com/user-attachments/assets/667a3a30-2672-468e-937c-60e579a77b8e" />
+<img width="600" height="1010" alt="изображение" src="https://github.com/user-attachments/assets/0d49a2dd-3e81-44fa-b01b-d7110d607ba6" />
+<img width="600" height="834" alt="изображение" src="https://github.com/user-attachments/assets/67b70b34-ecdd-4371-99ea-fbc32f5a800e" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
