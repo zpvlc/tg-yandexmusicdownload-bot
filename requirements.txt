@@ -1,9 +1,0 @@
-pyrogram
-tgcrypto
-python-dotenv
-yandex-music
-mutagen
-pillow
-requests
-aiohttp
-git+https://github.com/llistochek/yandex-music-downloader.git
